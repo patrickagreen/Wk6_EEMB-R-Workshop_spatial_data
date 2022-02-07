@@ -67,6 +67,18 @@ ggplot() +
 ```
 
 ```{r}
+sb_precip_normal_crop <- sb_precip_normal %>% 
+  crop(plots_buffer) %>% 
+  rasterToPoints() %>% 
+  data.frame()
+
+ggplot() +
+  geom_sf(data = sb_county) +
+  geom_raster(data = sb_precip_normal_crop, aes(x, y, fill = sb_precip_normal))
+```
+
+
+```{r}
 sb_precip_2000 <- raster(here("data", "sb_precip_2000.tif"))
 sb_precip_2001 <- raster(here("data", "sb_precip_2001.tif"))
 sb_precip_2002 <- raster(here("data", "sb_precip_2002.tif"))
@@ -89,5 +101,13 @@ plot(precip_brick_math)
 
 ```
 
+```{r}
+plots_sb_precip <- plots_sb %>% 
+  mutate(precip_2000 = raster::extract(sb_precip_2000, plots_sb),
+         precip_2001 = raster::extract(sb_precip_2001, plots_sb))
+
+ggplot(plots_sb_precip, aes(x = precip_2000, y = precip_2001)) +
+  geom_point()
+```
 
 
