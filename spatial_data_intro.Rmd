@@ -1,5 +1,5 @@
 ---
-title: "introduction to sf and raster"
+.title: "introduction to sf and raster"
 author: "Shane Dewees"
 date: "2/7/2022"
 output: html_document
@@ -7,24 +7,87 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(sf)
+library(raster)
+library(leaflet)
 ```
 
-## R Markdown
+```{r}
+plots <- st_read(here("data", "sample_plots.shp")) %>% 
+  st_transform(crs = 4326)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+sb_county <- st_read(here("data", "sb_county.shp")) %>% 
+  st_transform(crs = 4326)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+leaflet() %>% 
+  addPolygons(data = sb_county) %>% 
+  addMarkers(data = plots) %>% 
+  addTiles()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+plots_sb <- st_intersection(plots, sb_county) %>% 
+  dplyr::select(Id, NAME) %>% 
+  mutate(Id = 1:8) %>% 
+  rename("county" = "NAME")
+
+
+leaflet() %>% 
+  addPolygons(data = sb_county) %>% 
+  addMarkers(data = plots_sb) %>% 
+  addTiles()
+
+```
+
+```{r}
+plots_buffer <- st_buffer(plots_sb, dist = 100)
+leaflet() %>% 
+  addPolygons(data = plots_buffer) %>% 
+  addTiles()
+```
+
+```{r}
+sb_precip_normal <- raster(here("data", "sb_precip_normal.tif"))
+
+plot(sb_precip_normal)
+
+precip_normal_gg <- sb_precip_normal %>% 
+  rasterToPoints() %>% 
+  data.frame()
+
+ggplot() +
+  geom_sf(data = sb_county) +
+  geom_raster(data = precip_normal_gg, aes(x= x, y = y, fill =sb_precip_normal))+
+  geom_sf(data = plots_sb)
+```
+
+```{r}
+sb_precip_2000 <- raster(here("data", "sb_precip_2000.tif"))
+sb_precip_2001 <- raster(here("data", "sb_precip_2001.tif"))
+sb_precip_2002 <- raster(here("data", "sb_precip_2002.tif"))
+sb_precip_2003 <- raster(here("data", "sb_precip_2003.tif"))
+
+sb_precip_normal_resample <- resample(x = sb_precip_normal, y = sb_precip_2003)
+
+precip_2003_anomaly <- sb_precip_2003 - sb_precip_normal_resample 
+
+plot(precip_2003_anomaly)
+
+precip_brick <- brick(sb_precip_2003, 
+                      sb_precip_normal_resample, 
+                      precip_2003_anomaly)
+plot(precip_brick)
+
+precip_brick_math <- precip_brick - 1000
+
+plot(precip_brick_math)
+
+```
+
+
+
