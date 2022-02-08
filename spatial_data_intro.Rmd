@@ -107,7 +107,8 @@ sb_precip_normal_crop <- sb_precip_normal %>%
 
 ggplot() +
   geom_sf(data = sb_county) +
-  geom_raster(data = sb_precip_normal_crop, aes(x, y, fill = sb_precip_normal))
+  geom_raster(data = sb_precip_normal_crop, aes(x, y, fill = sb_precip_normal))+ 
+  geom_sf(data = plots_buffer)
 ```
 
 ## We cab also resample raster pixel size, do raster math, and combine raster layers
@@ -147,9 +148,10 @@ plot(precip_brick_math)
 ```{r}
 plots_sb_precip <- plots_sb %>% 
   mutate(precip_2003 = raster::extract(sb_precip_2003, plots_sb),
-         precip_2003_anomaly = raster::extract(precip_2003_anomaly, plots_sb))
+         precip_2003_anomaly = raster::extract(precip_2003_anomaly, plots_sb),
+         precip_normal = raster::extract(sb_precip_normal_resample, plots_sb))
 
-ggplot(plots_sb_precip, aes(x = precip_2003, y = precip_2003_anomaly)) +
+ggplot(plots_sb_precip, aes(x = precip_normal, y = precip_2003_anomaly)) +
   geom_point()
 ```
 
