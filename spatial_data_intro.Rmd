@@ -14,6 +14,8 @@ library(raster)
 library(leaflet)
 ```
 
+## Loading in vector data and reprojecting it with sf package
+
 ```{r}
 plots <- st_read(here("data", "sample_plots.shp")) %>% 
   st_transform(crs = 4326)
@@ -22,6 +24,7 @@ sb_county <- st_read(here("data", "sb_county.shp")) %>%
   st_transform(crs = 4326)
 ```
 
+## Basic graph to visualize data
 
 ```{r}
 leaflet() %>% 
@@ -29,6 +32,8 @@ leaflet() %>%
   addMarkers(data = plots) %>% 
   addTiles()
 ```
+
+## How to crop points to be within desired polygon
 
 ```{r}
 plots_sb <- st_intersection(plots, sb_county) %>% 
@@ -44,15 +49,31 @@ leaflet() %>%
 
 ```
 
+## We can add a buffer around our points to create new polygons
+
 ```{r}
-plots_buffer <- st_buffer(plots_sb, dist = 100)
+plots_buffer <- st_buffer(plots, dist = 100)
 leaflet() %>% 
   addPolygons(data = plots_buffer) %>% 
   addTiles()
 ```
 
+## Now you try: 
+- crop our plots_buffer layer to be only in Santa Barbara County
+- make a new buffer layer with plots_sb 
+- these should be identical. Graph them with leaflet and see if they overlap
+
+```{r}
+
+```
+
+
+## Loading in and visualizing raster data
+
 ```{r}
 sb_precip_normal <- raster(here("data", "sb_precip_normal.tif"))
+sb_precip_normal
+summary(sb_precip_normal)
 
 plot(sb_precip_normal)
 
@@ -64,7 +85,19 @@ ggplot() +
   geom_sf(data = sb_county) +
   geom_raster(data = precip_normal_gg, aes(x= x, y = y, fill =sb_precip_normal))+
   geom_sf(data = plots_sb)
+
+precip_normal_summary <- precip_normal_gg %>% 
+  summarize(mean = mean(sb_precip_normal, na.rm = TRUE),
+            median = median(sb_precip_normal, na.rm = TRUE),
+            sd = sd(sb_precip_normal, na.rm = TRUE))
+
+ggplot(precip_normal_gg) +
+  geom_histogram(aes(x = sb_precip_normal))
+
+
 ```
+
+## We can also crop raster data 
 
 ```{r}
 sb_precip_normal_crop <- sb_precip_normal %>% 
@@ -77,11 +110,9 @@ ggplot() +
   geom_raster(data = sb_precip_normal_crop, aes(x, y, fill = sb_precip_normal))
 ```
 
+## We cab also resample raster pixel size, do raster math, and combine raster layers
 
 ```{r}
-sb_precip_2000 <- raster(here("data", "sb_precip_2000.tif"))
-sb_precip_2001 <- raster(here("data", "sb_precip_2001.tif"))
-sb_precip_2002 <- raster(here("data", "sb_precip_2002.tif"))
 sb_precip_2003 <- raster(here("data", "sb_precip_2003.tif"))
 
 sb_precip_normal_resample <- resample(x = sb_precip_normal, y = sb_precip_2003)
@@ -101,13 +132,32 @@ plot(precip_brick_math)
 
 ```
 
+## Now you try:
+ - Load in precip data for 2000 - 20002
+ - Make a raster brick of those three layers
+ - Caluclate precipitation anomaly for raster brick
+ - plot it
+ 
+```{r}
+
+```
+ 
+
+## Lastly, we can use sf and raster package together to extract raster data to points or polygons
 ```{r}
 plots_sb_precip <- plots_sb %>% 
-  mutate(precip_2000 = raster::extract(sb_precip_2000, plots_sb),
-         precip_2001 = raster::extract(sb_precip_2001, plots_sb))
+  mutate(precip_2003 = raster::extract(sb_precip_2003, plots_sb),
+         precip_2003_anomaly = raster::extract(precip_2003_anomaly, plots_sb))
 
-ggplot(plots_sb_precip, aes(x = precip_2000, y = precip_2001)) +
+ggplot(plots_sb_precip, aes(x = precip_2003, y = precip_2003_anomaly)) +
   geom_point()
 ```
 
+## Now you try: 
+ -Extract 2000-2002 anomalies to plots_sb
+ -graph a relationship with ggplot
+ 
+```{r}
 
+```
+ 
