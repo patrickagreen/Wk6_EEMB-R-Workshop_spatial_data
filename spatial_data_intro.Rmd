@@ -53,7 +53,9 @@ leaflet() %>%
 
 ```{r}
 plots_buffer <- st_buffer(plots, dist = 100)
+
 leaflet() %>% 
+  addPolygons(data = sb_county) %>%
   addPolygons(data = plots_buffer) %>% 
   addTiles()
 ```
@@ -64,7 +66,19 @@ leaflet() %>%
 - these should be identical. Graph them with leaflet and see if they overlap
 
 ```{r}
+#crop plots_buffer
+plots_buffer_sb <- st_intersection(plots_buffer, sb_county) %>% 
+  dplyr::select(Id, NAME) %>% 
+  mutate(Id = 1:8) %>% 
+  rename("county" = "NAME")
 
+#new buffer layer with plots_sb
+sb_points_buffer <- st_buffer(plots_sb, dist = 100)
+
+leaflet() %>% 
+  addPolygons(data = plots_buffer_sb, fillOpacity = 0.75) %>%
+  addPolygons(data = sb_points_buffer, color = "red", fillOpacity = 0.25) %>% 
+  addTiles()
 ```
 
 
@@ -111,7 +125,7 @@ ggplot() +
   geom_sf(data = plots_buffer)
 ```
 
-## We cab also resample raster pixel size, do raster math, and combine raster layers
+## We can also resample raster pixel size, do raster math, and combine raster layers
 
 ```{r}
 sb_precip_2003 <- raster(here("data", "sb_precip_2003.tif"))
